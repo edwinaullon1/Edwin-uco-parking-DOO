@@ -14,55 +14,69 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import co.edu.uco.ucoparking.controlador.dto.Respuesta;
+import co.edu.uco.ucoparking.controlador.respuesta.RespuestaExito;
 import co.edu.uco.ucoparking.dto.DepartamentoDTO;
-import co.edu.uco.ucoparking.negocio.fachada.DepartamentoFachada;
-import co.edu.uco.ucoparking.negocio.fachada.impl.DepartamentoFachadaImpl;
+import co.edu.uco.ucoparking.negocio.fachada.departamento.ActualizarDepartamentoFachada;
+import co.edu.uco.ucoparking.negocio.fachada.departamento.ConsultarDepartamentoPorIdFachada;
+import co.edu.uco.ucoparking.negocio.fachada.departamento.ConsultarDepartamentosPorFiltroFachada;
+import co.edu.uco.ucoparking.negocio.fachada.departamento.EliminarDepartamentoFachada;
+import co.edu.uco.ucoparking.negocio.fachada.departamento.RegistrarNuevoDepartamentoFachada;
+import co.edu.uco.ucoparking.negocio.fachada.departamento.impl.ActualizarDepartamentoFachadaImpl;
+import co.edu.uco.ucoparking.negocio.fachada.departamento.impl.ConsultarDepartamentoPorIdFachadaImpl;
+import co.edu.uco.ucoparking.negocio.fachada.departamento.impl.ConsultarDepartamentosPorFiltroFachadaImpl;
+import co.edu.uco.ucoparking.negocio.fachada.departamento.impl.EliminarDepartamentoFachadaImpl;
+import co.edu.uco.ucoparking.negocio.fachada.departamento.impl.RegistrarNuevoDepartamentoFachadaImpl;
 
 @RestController
-@RequestMapping("/api/departamentos")
+@RequestMapping("/api/v1/departamentos")
 public class DepartamentoControlador {
 
-    private final DepartamentoFachada fachada = new DepartamentoFachadaImpl();
-
     @PostMapping
-    public ResponseEntity<Respuesta<Void>> crear(@RequestBody final DepartamentoDTO dto) {
-        Respuesta<Void> respuesta = fachada.crear(dto);
-        return respuesta.isExitoso()
-                ? ResponseEntity.ok(respuesta)
-                : ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Respuesta<DepartamentoDTO>> recuperarPorId(@PathVariable final UUID id) {
-        Respuesta<DepartamentoDTO> respuesta = fachada.recuperarPorId(id);
-        return respuesta.isExitoso()
-                ? ResponseEntity.ok(respuesta)
-                : ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
-    }
-
-    @GetMapping
-    public ResponseEntity<Respuesta<List<DepartamentoDTO>>> recuperarTodos() {
-        Respuesta<List<DepartamentoDTO>> respuesta = fachada.recuperarTodos(new DepartamentoDTO.Builder().build());
-        return respuesta.isExitoso()
-                ? ResponseEntity.ok(respuesta)
-                : ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
+    public ResponseEntity<RespuestaExito<String>> registrarNuevoDepartamento(@RequestBody final DepartamentoDTO dto) {
+        RegistrarNuevoDepartamentoFachada fachada = new RegistrarNuevoDepartamentoFachadaImpl();
+        fachada.ejecutar(dto);
+        return new ResponseEntity<>(
+                RespuestaExito.crear("El departamento se ha registrado exitosamente.", ""),
+                HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Respuesta<Void>> actualizar(@PathVariable final UUID id,
+    public ResponseEntity<RespuestaExito<String>> actualizarDepartamento(@PathVariable final UUID id,
             @RequestBody final DepartamentoDTO dto) {
-        Respuesta<Void> respuesta = fachada.actualizar(dto);
-        return respuesta.isExitoso()
-                ? ResponseEntity.ok(respuesta)
-                : ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
+        final DepartamentoDTO dtoConId = new DepartamentoDTO.Builder()
+                .id(id).nombre(dto.getNombre()).pais(dto.getPais()).build();
+        ActualizarDepartamentoFachada fachada = new ActualizarDepartamentoFachadaImpl();
+        fachada.ejecutar(dtoConId);
+        return new ResponseEntity<>(
+                RespuestaExito.crear("El departamento se ha actualizado exitosamente.", ""),
+                HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Respuesta<Void>> eliminar(@PathVariable final UUID id) {
-        Respuesta<Void> respuesta = fachada.eliminar(id);
-        return respuesta.isExitoso()
-                ? ResponseEntity.ok(respuesta)
-                : ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(respuesta);
+    public ResponseEntity<RespuestaExito<String>> eliminarDepartamento(@PathVariable final UUID id) {
+        EliminarDepartamentoFachada fachada = new EliminarDepartamentoFachadaImpl();
+        fachada.ejecutar(id);
+        return new ResponseEntity<>(
+                RespuestaExito.crear("El departamento se ha eliminado exitosamente.", ""),
+                HttpStatus.OK);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<RespuestaExito<DepartamentoDTO>> consultarDepartamentoPorId(@PathVariable final UUID id) {
+        ConsultarDepartamentoPorIdFachada fachada = new ConsultarDepartamentoPorIdFachadaImpl();
+        final DepartamentoDTO resultado = fachada.ejecutar(id);
+        return new ResponseEntity<>(
+                RespuestaExito.crear("El departamento se ha consultado exitosamente.", resultado),
+                HttpStatus.OK);
+    }
+
+    @GetMapping
+    public ResponseEntity<RespuestaExito<List<DepartamentoDTO>>> consultarDepartamentos() {
+        ConsultarDepartamentosPorFiltroFachada fachada = new ConsultarDepartamentosPorFiltroFachadaImpl();
+        final List<DepartamentoDTO> resultado = fachada.ejecutar(new DepartamentoDTO.Builder().build());
+        return new ResponseEntity<>(
+                RespuestaExito.crear("Departamentos consultados exitosamente.", resultado),
+                HttpStatus.OK);
+    }
+
 }
